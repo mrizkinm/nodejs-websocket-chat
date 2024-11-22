@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        html{
+        font-size: 62.5%;
+        }
+        body{
+        margin:0;
+        padding: 0;
+        display:flex;
+        justify-content:center;
+        }
+        .container{
+        margin-top: 5rem;
+        display:flex;
+        flex-direction:column;
+        width: 30%;
+        height: 70vh;
+        }
+        .msg{
+        color:blueviolet;
+        font-size: 2rem;
+        }
+        .msgCtn{
+        margin: 1rem 0;
+        color: white;
+        padding: 1rem 1rem;
+        background-color: blueviolet;
+        border-radius: 6px;
+        font-size: 2rem
+        }
+        .msgForm{
+        display:flex;
+        flex-direction:row;
+        }
+        .input{
+        height: 100%;
+        flex: 4;
+        margin-right: 2rem;
+        border:none;
+        border-radius: .5rem;
+        padding: 2px 1rem;
+        font-size: 1.5rem;
+        background-color:aliceblue;
+        }
+        .input:focus{
+        background-color:white;
+        }
+        .btn{
+        height:5rem;
+        flex: 1;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        border-radius: .5rem;
+        background-color:blueviolet;
+        color: whitesmoke;
+        border:none;
+        font-size: 1.6rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+      <p class="msg">Messages:</p>
+      <div id="chatbox" class="messages"></div>
+      <div id="msgForm" class="msgForm">
+          <input type="text" placeholder="Send message" class="input" id="messageInput" />
+          <button class="btn" value="Send" id="sendButton">Send</button>
+      </div>
+    </div>
+    <!-- <div id="chatbox"></div>
+    <input type="text" id="messageInput" placeholder="Type your message...">
+    <button id="sendButton">Send</button> -->
+
+    <script>
+        const chatbox = document.getElementById('chatbox');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        const ws = new WebSocket('ws://localhost:3000');
+
+        ws.onopen = function(event) {
+            console.log('Connected to the WebSocket server');
+        };
+
+        ws.onmessage = function(event) {
+          if (event.data instanceof Blob) {
+            const messageBlob = event.data;
+            const reader = new FileReader();
+            reader.onload = function() {
+                console.log(reader.result);
+                const message = JSON.parse(reader.result);
+                displayMessage(message);
+            };
+            reader.readAsText(messageBlob);
+          } else {
+            const message = JSON.parse(event.data);
+            displayMessage(message);
+          }
+        };
+
+        function displayMessage(message) {
+            const p = document.createElement('p');
+            p.textContent = `${message.username}: ${message.text}`;
+            chatbox.appendChild(p);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', function() {
+            const message = messageInput.value;
+            if (message.trim() !== '') {
+                // displayMessage({ username: 'Me', text: message });
+                ws.send(JSON.stringify({ username: 'Me', text: message }));
+                messageInput.value = '';
+            }
+        });
+
+        messageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
